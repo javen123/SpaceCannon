@@ -22,12 +22,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let kHaloLowAngle:CGFloat = 200.0 * CGFloat(M_PI) / 180.0
     let kHaloHighAngle:CGFloat = 340.0 * CGFloat(M_PI) / 180.0
     let kHaloSpeed:CGFloat = 100.0
-    let kHaloCategory:UInt32 = 0x1 << 0
-    let kBallCategory:UInt32 = 0x1 << 1
-    let kEdgeCategory:UInt32 = 0x1 << 2
-    let kShieldCategory:UInt32 = 0x1 << 3
-    let kLifeBarCategory:UInt32 = 0x1 << 4
+    let kHaloCategory:UInt32            = 0x1 << 0
+    let kBallCategory:UInt32            = 0x1 << 1
+    let kEdgeCategory:UInt32            = 0x1 << 2
+    let kShieldCategory:UInt32          = 0x1 << 3
+    let kLifeBarCategory:UInt32         = 0x1 << 4
+    let kShieldUpCategory:UInt32        = 0x1 << 5
+    let kMultiShotBallCategory:UInt32   = 0x1 << 6
     
+    let pointLabel = SKLabelNode(fontNamed: "DIN Alternate")
     let scoreLabel = SKLabelNode(fontNamed: "DIN Alternate")
     let ammoDisplay = SKSpriteNode(imageNamed: "Ammo5")
     
@@ -35,16 +38,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let lifebarBlastSound = SKAction.playSoundFileNamed("lifeBarBlast.caf", waitForCompletion: false)
     let haloBlastSound = SKAction.playSoundFileNamed("haloBlast.caf", waitForCompletion: false)
     let bounceSound = SKAction.playSoundFileNamed("bounce.caf", waitForCompletion: false)
+    let shieldUpSound = SKAction.playSoundFileNamed("shieldReplace.caf", waitForCompletion: false)
     
     let menu = MenuVC()
     
-    
+    var pointValue = 1
     var didShoot:Bool!
     var ammo = 5
-    var score:Int!
+    var score = 0
     var isGameOver:Bool!
-    
-    
+    var haloCount = 0
+    var shieldPool = [SKSpriteNode]()
+    var killCount:Int!
     
    override func didMoveToView(view: SKView) {
     
@@ -103,28 +108,52 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                         SKAction.runBlock(spawnHalo)])
 
         self.runAction(SKAction.repeatActionForever(haloSpawn), withKey:"SpawnHaloSequence")
-
+    
+        //set up shield pool
+    
+        // set up shields
+    
+        for var i = 0; i < 6; i++ {
+            let shield = SKSpriteNode(imageNamed: "Block")
+            shield.name = "Shield"
+            shield.position = CGPoint(x: 35 + (50 * i), y: 90)
+            shield.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(42, 9))
+            shield.physicsBody?.categoryBitMask = kShieldCategory
+            shield.physicsBody?.collisionBitMask = 0
+            shieldPool.append(shield)
+        }
+    
+    
+        let spawnShieldDisplay = SKAction.sequence([SKAction.waitForDuration(15, withRange: 4),
+                                                    SKAction.runBlock(spawnShieldPowerUp)])
+        self.runAction(SKAction.repeatActionForever(spawnShieldDisplay))
+    
 
         // Setup Ammo display
-       
+    
         ammoDisplay.anchorPoint = CGPointMake(0.5, 0.0)
         ammoDisplay.position = cannon.position
         self.addChild(ammoDisplay)
         
 
         let incrementAmmo = SKAction.sequence([SKAction.waitForDuration(1.5),
-                                               SKAction.runBlock({self.ammo = self.ammo + 1
-                                                                  })])
+                                               SKAction.runBlock({self.ammo = self.ammo + 1})])
 
         self.runAction(SKAction.repeatActionForever(incrementAmmo))
         
-        // set up score label
+        // set up score display
         
         scoreLabel.position = CGPointMake(15, 10)
         scoreLabel.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.Left
         scoreLabel.fontSize = 15
-        score = 0
         self.addChild(scoreLabel)
+        scoreLabel.hidden = true
+    
+        pointLabel.position = CGPointMake(15, 30)
+        pointLabel.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.Left
+        pointLabel.fontSize = 15
+        self.addChild(pointLabel)
+        pointLabel.hidden = true
         
         // set up menu
     
@@ -143,6 +172,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         scoreLabel.text = "Score: \(aScore)"
         
+    }
+    
+    func setPointValue (aScore:Int) {
+        pointValue = aScore
+        pointLabel.text = "Points: x\(aScore)"
     }
     
     func setAmmo () {
@@ -170,13 +204,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         if firstBody.categoryBitMask == kHaloCategory && secondBody.categoryBitMask == kBallCategory {
             
-            score = score + 1
+            score += self.pointValue
             let firstPosition = firstBody.node?.position
             addExplosion(firstPosition!, fileName: "HaloExplosion")
             self.runAction(haloBlastSound)
+            killCount = killCount + 1
+            
+            if killCount % 10 == 0 {
+                
+                spawnMultiShotPowerUp()
+                
+            }
+            
+            if let hasMultiplier:Bool = firstBody.node?.userData?.valueForKey("Multiplier") as? Bool {
+                
+               self.pointValue++
+            }
+            else if let isBomb:Bool = firstBody.node?.userData?.valueForKey("Bomb") as? Bool {
+                
+                mainLayer.enumerateChildNodesWithName("Halo", usingBlock: { (node, stop) -> Void in
+                    self.addExplosion(node.position, fileName: "HaloExplosion")
+                    node.removeFromParent()
+                })
+               
+            }
             
             firstBody.node?.removeFromParent()
             secondBody.node?.removeFromParent()
+            haloCount--
         }
         
         if firstBody.categoryBitMask == kHaloCategory && secondBody.categoryBitMask == kShieldCategory {
@@ -185,8 +240,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             runAction(haloBlastSound)
             addExplosion(firstPosition!, fileName:"HaloExplosion")
             
+            if let isBomb:Bool = firstBody.node?.userData?.valueForKey("Bomb") as? Bool {
+                mainLayer.enumerateChildNodesWithName("Shield", usingBlock: { (node, stop) -> Void in
+                    self.addExplosion(node.position, fileName: "HaloExplosion")
+                    node.removeFromParent()
+                })
+            }
+
+            
             firstBody.node?.removeFromParent()
+            shieldPool.append((secondBody.node) as SKSpriteNode)
             secondBody.node?.removeFromParent()
+            haloCount--
         }
         
         if firstBody.categoryBitMask == kHaloCategory && secondBody.categoryBitMask == kLifeBarCategory {
@@ -203,13 +268,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         if firstBody.categoryBitMask == kHaloCategory && secondBody.categoryBitMask == kEdgeCategory {
             
+            firstBody.velocity = (CGVectorMake(firstBody.velocity.dx * -1.0, firstBody.velocity.dy))
             self.runAction(bounceSound)
 
         }
         
         if firstBody.categoryBitMask == kBallCategory && secondBody.categoryBitMask == kEdgeCategory {
             
+            if let body = firstBody.node as? CCBall {
+                body.bounces++
+                if body.bounces > 3 {
+                    firstBody.node?.removeFromParent()
+                    self.pointValue = 1
+                }
+            }
             self.runAction(bounceSound)
+        }
+        
+        if firstBody.categoryBitMask == kBallCategory && secondBody.categoryBitMask == kShieldUpCategory {
+            //Hit shield power up
+            
+            var i = UInt32(shieldPool.count)
+            var randomIndex:Int = Int(arc4random_uniform(i))
+            if shieldPool.count > 0 {
+                var randomShield = shieldPool[randomIndex]
+                mainLayer.addChild(randomShield)
+                self.runAction(shieldUpSound)
+                shieldPool.removeAtIndex(randomIndex)
+            }
+            firstBody.node?.removeFromParent()
+            secondBody.node?.removeFromParent()
+            
         }
     }
     
@@ -238,6 +327,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         /* Called before each frame is rendered */
         setAmmo()
         setScore(score)
+        setPointValue(pointValue)
     }
 
 
@@ -256,7 +346,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if self.ammo > 0 {
             self.runAction(laserBlastSound)
             self.ammo = self.ammo - 1
-            let ball = SKSpriteNode(imageNamed: "Ball")
+            let ball = CCBall(imageNamed: "Ball")
             ball.name = "Ball"
             var rotationVector = radiansToVector(cannon.zRotation)
             ball.position = CGPointMake(cannon.position.x + (cannon.size.width * 0.5 * rotationVector.dx), cannon.position.y + (cannon.size.width * 0.5 * rotationVector.dy))
@@ -269,11 +359,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             ball.physicsBody?.friction = 0
             ball.physicsBody?.categoryBitMask = kBallCategory
             ball.physicsBody?.collisionBitMask = kEdgeCategory
-            ball.physicsBody?.contactTestBitMask = kEdgeCategory
+            ball.physicsBody?.contactTestBitMask = kEdgeCategory | kShieldUpCategory | kMultiShotBallCategory
+            
+            // create trail
+            let ballTrailPath:String = NSBundle.mainBundle().pathForResource("BallTrail", ofType: "sks")!
+            let ballTrail:SKEmitterNode = NSKeyedUnarchiver.unarchiveObjectWithFile(ballTrailPath) as SKEmitterNode
+            ballTrail.targetNode = mainLayer
+            mainLayer.addChild(ballTrail)
+            ball.trail = ballTrail
 
         }
         
     }
+    
     
     override func didSimulatePhysics() {
         
@@ -283,10 +381,33 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
         mainLayer.enumerateChildNodesWithName("Ball", usingBlock: { (node, stop) -> Void in
+            
+            if node.respondsToSelector(Selector("updateTrail")) {
+                (node as CCBall).updateTrail()
+            }
+            
             if (!CGRectContainsPoint(self.frame, node.position)){
                 node.removeFromParent()
+                self.pointValue = 1
             }
         })
+        
+        mainLayer.enumerateChildNodesWithName("ShieldUp", usingBlock: { (node, stop) -> Void in
+            
+            if node.position.x + node.frame.size.width < 0 {
+                node.removeFromParent()
+            }
+            
+        })
+        mainLayer.enumerateChildNodesWithName("MultiUp", usingBlock: { (node, stop) -> Void in
+            
+            if node.position.x - node.frame.size.width < self.size.width {
+                node.removeFromParent()
+            }
+            
+        })
+
+        
     }
     
     private func randomInRange(low:CGFloat, high:CGFloat) -> CGFloat {
@@ -305,7 +426,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let spawnHaloAction = self.actionForKey("SpawnHaloSequence")
         if spawnHaloAction?.speed  < 1.5 {
-            spawnHaloAction?.speed += 0.05
+            spawnHaloAction?.speed += 0.01
         }
         
         let halo = SKSpriteNode(imageNamed: "Halo")
@@ -318,9 +439,80 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         halo.physicsBody?.linearDamping = 0
         halo.physicsBody?.friction = 0
         halo.physicsBody?.categoryBitMask = kHaloCategory
-        halo.physicsBody?.collisionBitMask = kEdgeCategory
+        halo.physicsBody?.collisionBitMask = 0
         halo.physicsBody?.contactTestBitMask = kBallCategory | kShieldCategory | kLifeBarCategory | kEdgeCategory
+        
+        
+        if isGameOver == false {
+            
+            for node in mainLayer.children {
+                
+                    var aNode:SKNode = node as SKNode
+                    
+                    if aNode.name == "Halo" {
+                    
+                        haloCount++
+                    }
+            }
+            
+            if haloCount >= 4 {
+                //create halo bomb
+                println("bomb released")
+                halo.texture = SKTexture(imageNamed: "HaloBomb")
+                halo.userData = ["Bomb" : true]
+                haloCount = 0
+            }
+            else if (isGameOver == false && arc4random_uniform(6) == 0) {
+                // random point multiplier
+
+                halo.texture = SKTexture(imageNamed: "HaloX")
+                halo.userData = ["Multiplier": true]
+            }
+
+        }
+                
         mainLayer.addChild(halo)
+    }
+    
+    func spawnMultiShotPowerUp () {
+       
+        
+        
+        let multiShot = SKSpriteNode(imageNamed: "MultiShotPowerUp")
+        multiShot.name = "MultiUp"
+        multiShot.position = CGPointMake(-multiShot.size.width, randomInRange(150, high: self.size.height - 100))
+        multiShot.physicsBody = SKPhysicsBody(circleOfRadius: 12)
+        multiShot.physicsBody?.categoryBitMask = kMultiShotBallCategory
+        multiShot.physicsBody?.collisionBitMask = 0
+        multiShot.physicsBody?.velocity = CGVector(dx: 100, dy: randomInRange(-40, high: 40))
+        multiShot.physicsBody?.angularVelocity = CGFloat(M_1_PI)
+        multiShot.physicsBody?.linearDamping = 0.0
+        multiShot.physicsBody?.angularVelocity = 0.0
+        mainLayer.addChild(multiShot)
+        println("should be multishot")
+        
+    }
+
+    func spawnShieldPowerUp () {
+        
+        
+        if shieldPool.count > 0 {
+            
+            println("should be shield")
+            let shieldUp = SKSpriteNode(imageNamed: "Block")
+            shieldUp.name = "ShieldUp"
+            shieldUp.position = CGPointMake(self.size.width + shieldUp.size.width, randomInRange(150, high: self.size.height - 100))
+            shieldUp.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(42, 9))
+            shieldUp.physicsBody?.categoryBitMask = kShieldUpCategory
+            shieldUp.physicsBody?.collisionBitMask = 0
+            shieldUp.physicsBody?.velocity = CGVectorMake(-100, randomInRange(-40, high: 40))
+            shieldUp.physicsBody?.angularVelocity = CGFloat(M_1_PI)
+            shieldUp.physicsBody?.linearDamping = 0.0
+            shieldUp.physicsBody?.angularDamping = 0.0
+            
+            mainLayer.addChild(shieldUp)
+        }
+        
     }
     
     
@@ -340,6 +532,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func gameOver () {
         
         mainLayer.enumerateChildNodesWithName("Halo", usingBlock: { (node, stop) -> Void in
+            
+            self.addExplosion(node.position, fileName: "HaloExplosion")
             node.removeFromParent()
         })
         
@@ -347,8 +541,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             node.removeFromParent()
         })
         mainLayer.enumerateChildNodesWithName("Shield", usingBlock: { (node, stop) -> Void in
+            
+            self.shieldPool.append(node as SKSpriteNode)
             node.removeFromParent()
         })
+        
+        mainLayer.enumerateChildNodesWithName("ShieldUp", usingBlock: { (node, stop) -> Void in
+            node.removeFromParent()
+        
+        })
+        
+        mainLayer.enumerateChildNodesWithName("MultiUp", usingBlock: { (node, stop) -> Void in
+            
+           node.removeFromParent()
+        })
+
+
         
         let delay = Int64(1.5 * Double(NSEC_PER_SEC))
         let time = dispatch_time(DISPATCH_TIME_NOW, Int64(delay))
@@ -357,6 +565,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         menu.hidden = false
         menu.setMenuScore(self.score)
         menu.setMenuTopScore(self.score)
+        scoreLabel.hidden = true
+        pointLabel.hidden = true
         
         isGameOver = true
     }
@@ -364,18 +574,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func newGame () {
         
         mainLayer.removeAllChildren()
-
-        // set up shields
         
-        for var i = 0; i < 6; i++ {
-            let shield = SKSpriteNode(imageNamed: "Block")
-            shield.name = "Shield"
-            shield.position = CGPoint(x: 35 + (50 * i), y: 90)
-            mainLayer.addChild(shield)
-            shield.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(42, 9))
-            shield.physicsBody?.categoryBitMask = kShieldCategory
-            shield.physicsBody?.collisionBitMask = 0
-            
+        while shieldPool.count > 0 {
+            mainLayer.addChild(shieldPool[0])
+            shieldPool.removeAtIndex(0)
         }
         
         //Life Bar
@@ -391,8 +593,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.actionForKey("HaloSpawnSequence")?.speed = 1
         ammo = 5
         score = 0
-
+        pointValue = 1
+        scoreLabel.hidden = false
+        pointLabel.hidden = false
         isGameOver = false
         menu.hidden = true
+        haloCount = 0
+        killCount = 0
     }
 }
