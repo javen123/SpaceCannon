@@ -8,62 +8,95 @@
 
 import UIKit
 import SpriteKit
+import iAd
 
-extension SKNode {
-    class func unarchiveFromFile(file : NSString) -> SKNode? {
-        if let path = NSBundle.mainBundle().pathForResource(file, ofType: "sks") {
-            var sceneData = NSData(contentsOfFile: path, options: .DataReadingMappedIfSafe, error: nil)!
-            var archiver = NSKeyedUnarchiver(forReadingWithData: sceneData)
-            
-            archiver.setClass(self.classForKeyedUnarchiver(), forClassName: "SKScene")
-            let scene = archiver.decodeObjectForKey(NSKeyedArchiveRootObjectKey) as GameScene
-            archiver.finishDecoding()
-            return scene
-        } else {
-            return nil
-        }
-    }
-}
 
-class GameViewController: UIViewController {
-
+class GameViewController: UIViewController, ADInterstitialAdDelegate{
+    
+    var interAd:ADInterstitialAd!
+    var interAdView:UIView!
+    var closeButton = UIButton.buttonWithType(UIButtonType.System) as UIButton
+    
+    
+    var scene: GameScene!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        if let scene = GameScene.unarchiveFromFile("GameScene") as? GameScene {
-            // Configure the view.
-            let skView = self.view as SKView
-            skView.showsFPS = true
-            skView.showsNodeCount = true
-            
-            /* Sprite Kit applies additional optimizations to improve rendering performance */
-            skView.ignoresSiblingOrder = true
-            
-            /* Set the scale mode to scale to fit the window */
-            scene.scaleMode = .AspectFill
-            
-            skView.presentScene(scene)
-        }
+        
+        
+           // Configure the view.
+        let skView = view as SKView
+        skView.multipleTouchEnabled = true
+        
+        // Create and configure the scene.
+        scene = GameScene(size: skView.bounds.size)
+        scene.scaleMode = .AspectFill
+        
+        // Present the scene.
+        skView.presentScene(scene)
+        
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: "showAds", name: notificationKey, object: nil)
+        
     }
-
-    override func shouldAutorotate() -> Bool {
-        return true
+    
+    
+    // MARK: IAd funcs
+    
+    func close (sender:UIButton) {
+        closeButton.removeFromSuperview()
+        interAdView.removeFromSuperview()
     }
-
-    override func supportedInterfaceOrientations() -> Int {
-        if UIDevice.currentDevice().userInterfaceIdiom == .Phone {
-            return Int(UIInterfaceOrientationMask.AllButUpsideDown.rawValue)
-        } else {
-            return Int(UIInterfaceOrientationMask.All.rawValue)
-        }
+    
+    func showAds () {
+        
+        interAd = ADInterstitialAd()
+        interAd.delegate = self
+        println("iad loading")
     }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Release any cached data, images, etc that aren't in use.
+    
+    func interstitialAdWillLoad(interstitialAd: ADInterstitialAd!) {
+        
     }
-
-    override func prefersStatusBarHidden() -> Bool {
-        return true
+    func interstitialAdDidLoad(interstitialAd: ADInterstitialAd!) {
+        
+        
+        closeButton.frame = CGRectMake(20, 20, 20, 20)
+        closeButton.layer.cornerRadius = 10
+        closeButton.setTitle("X", forState: .Normal)
+        closeButton.setTitleColor(UIColor.blackColor(), forState: .Normal)
+        closeButton.backgroundColor = UIColor.whiteColor()
+        closeButton.layer.borderColor = UIColor.blackColor().CGColor
+        closeButton.layer.borderWidth = 1
+        closeButton.addTarget(self, action: "close:", forControlEvents: UIControlEvents.TouchDown)
+        
+        interAdView = UIView()
+        interAdView.frame = self.view.bounds
+        self.view.addSubview(interAdView)
+        
+        interAd.presentInView(interAdView)
+        interAdView.addSubview(closeButton)
+        println("iAd did load")
+        
     }
+    
+    func interstitialAdDidUnload(interstitialAd: ADInterstitialAd!) {
+        
+        println("iad did unload")
+        interAd = nil
+        
+    }
+    
+    func interstitialAd(interstitialAd: ADInterstitialAd!, didFailWithError error: NSError!) {
+        
+        println("Failed to receive: \(error.localizedDescription)")
+        audioPlayer.play()
+        self.closeButton.removeFromSuperview()
+        self.interAdView.removeFromSuperview()
+        
+    }
+    
 }
+
+
+
+

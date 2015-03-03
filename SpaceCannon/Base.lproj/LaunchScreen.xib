@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="6214" systemVersion="14A314h" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="6254" systemVersion="14C109" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="6207"/>
-        <capability name="Constraints with non-1.0 multipliers" minToolsVersion="5.1"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="6247"/>
     </dependencies>
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
@@ -11,31 +10,55 @@
             <rect key="frame" x="0.0" y="0.0" width="480" height="480"/>
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <subviews>
-                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="  Copyright (c) 2015 Jim Aven. All rights reserved." textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="9" translatesAutoresizingMaskIntoConstraints="NO" id="8ie-xW-0ye">
-                    <rect key="frame" x="20" y="439" width="441" height="21"/>
-                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                    <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
-                    <nil key="highlightedColor"/>
-                </label>
-                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="SpaceCannon" textAlignment="center" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="kId-c2-rCX">
-                    <rect key="frame" x="20" y="140" width="441" height="43"/>
-                    <fontDescription key="fontDescription" type="boldSystem" pointSize="36"/>
-                    <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
-                    <nil key="highlightedColor"/>
-                </label>
+                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Title" translatesAutoresizingMaskIntoConstraints="NO" id="lAn-LN-2la">
+                    <rect key="frame" x="120" y="301" width="240" height="45"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="45" id="V8N-5c-7qt"/>
+                        <constraint firstAttribute="width" constant="240" id="f8c-E6-lJv"/>
+                    </constraints>
+                </imageView>
+                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="web" translatesAutoresizingMaskIntoConstraints="NO" id="czF-cL-BJ3">
+                    <rect key="frame" x="0.0" y="15" width="306" height="221"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="221" id="HxR-oR-cjP"/>
+                        <constraint firstAttribute="width" constant="306" id="SUf-rt-ofr"/>
+                    </constraints>
+                </imageView>
+                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Cannon" translatesAutoresizingMaskIntoConstraints="NO" id="whw-ff-Grm">
+                    <rect key="frame" x="96" y="62" width="136" height="128"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="128" id="FbC-Td-gNm"/>
+                        <constraint firstAttribute="width" constant="136" id="YuT-8Y-dI8"/>
+                    </constraints>
+                </imageView>
+                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="HaloBomb" translatesAutoresizingMaskIntoConstraints="NO" id="PnX-dF-6WI">
+                    <rect key="frame" x="380" y="61" width="60" height="51"/>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="60" id="KZb-4W-13q"/>
+                        <constraint firstAttribute="height" constant="51" id="V9w-p7-Ftr"/>
+                    </constraints>
+                </imageView>
             </subviews>
             <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
             <constraints>
-                <constraint firstItem="kId-c2-rCX" firstAttribute="centerY" secondItem="iN0-l3-epB" secondAttribute="bottom" multiplier="1/3" constant="1" id="5cJ-9S-tgC"/>
-                <constraint firstAttribute="centerX" secondItem="kId-c2-rCX" secondAttribute="centerX" id="Koa-jz-hwk"/>
-                <constraint firstAttribute="bottom" secondItem="8ie-xW-0ye" secondAttribute="bottom" constant="20" id="Kzo-t9-V3l"/>
-                <constraint firstItem="8ie-xW-0ye" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="20" symbolic="YES" id="MfP-vx-nX0"/>
-                <constraint firstAttribute="centerX" secondItem="8ie-xW-0ye" secondAttribute="centerX" id="ZEH-qu-HZ9"/>
-                <constraint firstItem="kId-c2-rCX" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="20" symbolic="YES" id="fvb-Df-36g"/>
+                <constraint firstItem="czF-cL-BJ3" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" constant="15" id="CjV-f6-cSC"/>
+                <constraint firstItem="czF-cL-BJ3" firstAttribute="centerX" secondItem="whw-ff-Grm" secondAttribute="centerX" constant="-11" id="ENi-Kj-3bO"/>
+                <constraint firstAttribute="bottom" secondItem="lAn-LN-2la" secondAttribute="bottom" constant="134" id="GPU-bv-8Jm"/>
+                <constraint firstAttribute="trailing" secondItem="PnX-dF-6WI" secondAttribute="trailing" constant="40" id="MO5-0z-YTW"/>
+                <constraint firstItem="czF-cL-BJ3" firstAttribute="centerY" secondItem="whw-ff-Grm" secondAttribute="centerY" constant="-0.5" id="Qbt-D3-Un8"/>
+                <constraint firstAttribute="centerX" secondItem="lAn-LN-2la" secondAttribute="centerX" id="UM1-xJ-vEv"/>
+                <constraint firstItem="czF-cL-BJ3" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" id="aBR-Ui-EMn"/>
+                <constraint firstItem="PnX-dF-6WI" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" constant="61" id="hz5-s6-T6n"/>
             </constraints>
             <nil key="simulatedStatusBarMetrics"/>
             <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
             <point key="canvasLocation" x="548" y="455"/>
         </view>
     </objects>
+    <resources>
+        <image name="Cannon" width="143" height="155"/>
+        <image name="HaloBomb" width="48" height="51"/>
+        <image name="Title" width="282" height="39"/>
+        <image name="web" width="339" height="346"/>
+    </resources>
 </document>
