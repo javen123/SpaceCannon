@@ -25,7 +25,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Override point for customization after application launch.
         
         UIViewController.prepareInterstitialAds()
-        println("ad prep initialized")
+        print("ad prep initialized")
         return true
     }
 

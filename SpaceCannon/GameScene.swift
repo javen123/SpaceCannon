@@ -35,6 +35,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let kShieldUpCategory:UInt32        = 0x1 << 5
     let kMultiShotBallCategory:UInt32   = 0x1 << 6
     
+    let lifeBar = SKSpriteNode(imageNamed: "BlueBar")
     let pointLabel = SKLabelNode(fontNamed: "DIN Alternate")
     let scoreLabel = SKLabelNode(fontNamed: "DIN Alternate")
     let ammoDisplay = SKSpriteNode(imageNamed: "Ammo5")
@@ -51,7 +52,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let menu = MenuVC()
     
     var pointValue = 1
-    var didShoot:Bool!
+    var didShoot:Bool?
     var ammo = 0
     var score = 0
     var isGameOver = false
@@ -74,7 +75,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
         //add background
         
-        let background = SKSpriteNode(imageNamed: "Starfield")
+        let background = SKSpriteNode(imageNamed: "StarField")
         background.position = CGPointMake(view.bounds.width/2, view.bounds.height/2)
         background.size = CGSize(width: self.size.width, height: self.size.height)
         background.blendMode = SKBlendMode.Replace
@@ -142,7 +143,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // set up shield display
     
-    for var i = 0; i < 6; i++ {
+    for i in 0 ..< 6 {
         let shield = SKSpriteNode(imageNamed: "Block")
         shield.name = "Shield"
         shield.position = CGPoint(x: 35 + (50 * i), y: 90)
@@ -199,13 +200,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     // MARK: helper funcs
     
-    func setScore (aScore:Int) {
+    func adjustScore (aScore:Int) {
         
         scoreLabel.text = "Score: \(aScore)"
         
     }
     
-    func setPointValue (aScore:Int) {
+    func adjustPointValue (aScore:Int) {
         pointValue = aScore
         pointLabel.text = "Points: x\(aScore)"
     }
@@ -213,7 +214,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func setAmmo () {
         
         if ammo >= 0 && ammo <= 5 {
-            var ammoTextureName = "Ammo\(ammo)"
+            let ammoTextureName = "Ammo\(ammo)"
             ammoDisplay.texture = SKTexture(imageNamed: ammoTextureName)
         }
     }
@@ -236,61 +237,66 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if firstBody.categoryBitMask == kHaloCategory && secondBody.categoryBitMask == kBallCategory {
             
             score += self.pointValue
-            let firstPosition = firstBody.node?.position
-            addExplosion(firstPosition!, fileName: "HaloExplosion")
-            self.runAction(haloBlastSound)
-            killCount = killCount + 1
-            
-            if let hasMultiplier:Bool = firstBody.node?.userData?.valueForKey("Multiplier") as? Bool {
+            if let firstPosition = firstBody.node?.position {
                 
-               self.pointValue++
-            }
-            else if let isBomb:Bool = firstBody.node?.userData?.valueForKey("Bomb") as? Bool {
+                addExplosion(firstPosition, fileName: "HaloExplosion")
+                self.runAction(haloBlastSound)
+                killCount = killCount + 1
                 
-                mainLayer.enumerateChildNodesWithName("Halo", usingBlock: { (node, stop) -> Void in
-                    self.addExplosion(node.position, fileName: "HaloExplosion")
-                    self.runAction(self.haloExplosion)
-                    node.removeFromParent()
-                })
-               
+                if let _:Bool = firstBody.node?.userData?.valueForKey("Multiplier") as? Bool {
+                    
+                    self.pointValue += 1
+                }
+                else if let _:Bool = firstBody.node?.userData?.valueForKey("Bomb") as? Bool {
+                    
+                    mainLayer.enumerateChildNodesWithName("Halo", usingBlock: { (node, stop) -> Void in
+                        self.addExplosion(node.position, fileName: "HaloExplosion")
+                        self.runAction(self.haloExplosion)
+                        node.removeFromParent()
+                    })
+                }
             }
             
             firstBody.node?.removeFromParent()
             secondBody.node?.removeFromParent()
-            haloCount--
+            haloCount -= 1
         }
         
         if firstBody.categoryBitMask == kHaloCategory && secondBody.categoryBitMask == kShieldCategory {
             
-            let firstPosition = firstBody.node?.position
-            runAction(haloBlastSound)
-            addExplosion(firstPosition!, fileName:"HaloExplosion")
-            
-            if let isBomb:Bool = firstBody.node?.userData?.valueForKey("Bomb") as? Bool {
-                mainLayer.enumerateChildNodesWithName("Shield", usingBlock: { (node, stop) -> Void in
-                    self.addExplosion(node.position, fileName: "HaloExplosion")
-                    self.runAction(self.haloExplosion)
-                    node.removeFromParent()
-                })
+            if let firstPosition = firstBody.node?.position {
+                runAction(haloBlastSound)
+                addExplosion(firstPosition, fileName:"HaloExplosion")
+                
+                if let _ = firstBody.node?.userData?.valueForKey("Bomb") as? Bool {
+                    mainLayer.enumerateChildNodesWithName("Shield", usingBlock: {
+                        node, stop in
+                        
+                        self.addExplosion(node.position, fileName: "HaloExplosion")
+                        self.runAction(self.haloExplosion)
+                        node.removeFromParent()
+                    })
+                } else {
+                    firstBody.node?.removeFromParent()
+                    shieldPool.append((secondBody.node) as! SKSpriteNode)
+                    secondBody.node?.removeFromParent()
+                    haloCount -= 1
+                }
             }
-
-            
-            firstBody.node?.removeFromParent()
-            shieldPool.append((secondBody.node) as SKSpriteNode)
-            secondBody.node?.removeFromParent()
-            haloCount--
         }
         
         if firstBody.categoryBitMask == kHaloCategory && secondBody.categoryBitMask == kLifeBarCategory {
             
-            let firstPosition = firstBody.node?.position
-            addExplosion(firstPosition!, fileName:"LifeBarExplosion")
-            self.runAction(lifebarBlastSound)
-            
-            firstBody.node?.removeFromParent()
-            secondBody.node?.removeFromParent()
-            gameOver()
-            
+            if let firstPosition = firstBody.node?.position {
+                addExplosion(firstPosition, fileName:"LifeBarExplosion")
+                self.runAction(lifebarBlastSound)
+                
+                firstBody.node!.removeFromParent()
+                secondBody.node!.removeFromParent()
+                gameOver()
+            } else {
+                gameOver()
+            }
         }
         
         if firstBody.categoryBitMask == kHaloCategory && secondBody.categoryBitMask == kEdgeCategory {
@@ -306,7 +312,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if firstBody.categoryBitMask == kBallCategory && secondBody.categoryBitMask == kEdgeCategory {
             
             if let body = firstBody.node as? CCBall {
-                body.bounces++
+                body.bounces += 1
                 if body.bounces > 3 {
                     firstBody.node?.removeFromParent()
                     self.pointValue = 1
@@ -321,10 +327,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if firstBody.categoryBitMask == kBallCategory && secondBody.categoryBitMask == kShieldUpCategory {
             //Hit shield power up
             
-            var i = UInt32(shieldPool.count)
-            var randomIndex:Int = Int(arc4random_uniform(i))
+            let i = UInt32(shieldPool.count)
+            let randomIndex:Int = Int(arc4random_uniform(i))
             if shieldPool.count > 0 {
-                var randomShield = shieldPool[randomIndex]
+                let randomShield = shieldPool[randomIndex]
                 mainLayer.addChild(randomShield)
                 self.runAction(shieldUpSound)
                 shieldPool.removeAtIndex(randomIndex)
@@ -340,62 +346,65 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             firstBody.node?.removeFromParent()
             secondBody.node?.removeFromParent()
             ammo = 5
+            setMultiMode()
             
         }
-        
-        setMultiMode()
     }
     // MARK: Touches
     
-    override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
+    override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
         
         for touch in touches {
             if isGameOver == false && self.gamePaused == false {
                 didShoot = true
-                if pauseBtn.containsPoint(touch.locationInNode(pauseBtn.parent)) {
-                    
+                if pauseBtn.containsPoint(touch.locationInNode(pauseBtn.parent!)) {
+
                 }
             } 
         }
     }
     
-    override func touchesEnded(touches: NSSet, withEvent event: UIEvent) {
+    override func touchesEnded(touches: Set<UITouch>, withEvent event: UIEvent?) {
+        
         for touch in touches {
             if isGameOver == true {
-                var location:CGPoint = touch.locationInNode(menu)
-                var node:SKNode = menu.nodeAtPoint(location)
+                let location:CGPoint = touch.locationInNode(menu)
+                let node:SKNode = menu.nodeAtPoint(location)
                 if node.name == "Play" {
                     self.newGame()
                 }
             }
             if isGameOver == false {
                 if gamePaused == true {
-                    if resumeBtn.containsPoint(touch.locationInNode(resumeBtn.parent)) {
+                    if resumeBtn.containsPoint(touch.locationInNode(resumeBtn.parent!)) {
                         gamesPaused(false)
                     }
                 }
-                else if pauseBtn.containsPoint(touch.locationInNode(pauseBtn.parent)) {
+                else if pauseBtn.containsPoint(touch.locationInNode(pauseBtn.parent!)) {
                     gamesPaused(true)
-                    println("Pause touched")
+                    print("Pause touched")
                 }
             }
         }
     }
+    
 
+    
+ 
     override func update(currentTime: CFTimeInterval) {
         /* Called before each frame is rendered */
         setAmmo()
-        setScore(score)
-        setPointValue(pointValue)
+        adjustScore(score)
+        adjustPointValue(pointValue)
     }
 
 
     // MARK: Shooter
 
     
-    private func radiansToVector (var radians:CGFloat) -> CGVector {
+    private func radiansToVector (radians:CGFloat) -> CGVector {
         
-        var vector = CGVector(dx: cos(radians), dy: sin(radians))
+        let vector = CGVector(dx: cos(radians), dy: sin(radians))
         
         return vector
     }
@@ -406,7 +415,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.ammo = self.ammo - 1
         let ball = CCBall(imageNamed: "Ball")
         ball.name = "Ball"
-        var rotationVector = radiansToVector(cannon.zRotation)
+        let rotationVector = radiansToVector(cannon.zRotation)
         ball.position = CGPointMake(cannon.position.x + (cannon.size.width * 0.5 * rotationVector.dx), cannon.position.y + (cannon.size.width * 0.5 * rotationVector.dy))
         mainLayer.addChild(ball)
         
@@ -421,7 +430,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // create trail
         let ballTrailPath:String = NSBundle.mainBundle().pathForResource("BallTrail", ofType: "sks")!
-        let ballTrail:SKEmitterNode = NSKeyedUnarchiver.unarchiveObjectWithFile(ballTrailPath) as SKEmitterNode
+        let ballTrail:SKEmitterNode = NSKeyedUnarchiver.unarchiveObjectWithFile(ballTrailPath) as! SKEmitterNode
         ballTrail.targetNode = mainLayer
         mainLayer.addChild(ballTrail)
         ball.trail = ballTrail
@@ -430,33 +439,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func didSimulatePhysics() {
         
-        if didShoot? == true {
-            if self.ammo > 0 {
-                shoot()
-                
-                if self.multiMode == true {
+        if let shot = didShoot {
+            if shot == true {
+                if self.ammo > 0 {
+                    shoot()
                     
-                    for var i = 1.0; i < 5.0; i++ {
-                        var time = i * 0.1
-                        let cannonAction = SKAction.sequence([SKAction.waitForDuration(time),
-                                        SKAction.runBlock({ () -> Void in
-                                            self.shoot()
-                                        })])
-                        self.runAction(SKAction.repeatAction(cannonAction, count: 1))
+                    if self.multiMode == true {
                         
-                            self.multiMode = false
-                            self.ammo = 5
-                        
+                        var i = 1.0
+                        while i <= 5.0 {
+                            i += 1.0
+                            let time = i * 0.1
+                            let cannonAction = SKAction.sequence([SKAction.waitForDuration(time),
+                                SKAction.runBlock({ () -> Void in
+                                    self.shoot()
+                                })])
+                            self.runAction(SKAction.repeatAction(cannonAction, count: 1))
+                        }
+                        self.multiMode = false
+                        self.ammo = 5
+                        self.setMultiMode()
                     }
                 }
             }
-            didShoot? = false
+                        didShoot? = false
         }
         
         mainLayer.enumerateChildNodesWithName("Ball", usingBlock: { (node, stop) -> Void in
             
-            if node.respondsToSelector(Selector("updateTrail")) {
-                (node as CCBall).updateTrail()
+            if node.respondsToSelector(#selector(CCBall.updateTrail)) {
+                (node as! CCBall).updateTrail()
             }
             
             if (!CGRectContainsPoint(self.frame, node.position)){
@@ -491,7 +503,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private func randomInRange(low:CGFloat, high:CGFloat) -> CGFloat {
         
-        var ranValue:CGFloat = CGFloat(arc4random_uniform(UINT32_MAX)) / CGFloat(UINT32_MAX)
+        let ranValue:CGFloat = CGFloat(arc4random_uniform(UINT32_MAX)) / CGFloat(UINT32_MAX)
         
         return ranValue * (high - low) + low
     }
@@ -512,7 +524,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         halo.name = "Halo"
         halo.position =  CGPointMake(randomInRange(halo.size.width * 0.5, high: self.size.width - (halo.size.width * 0.5)), self.size.height + halo.size.height * 0.5)
         halo.physicsBody = SKPhysicsBody(circleOfRadius: 28.0)
-        var direction = radiansToVector(randomInRange(kHaloLowAngle, high: kHaloHighAngle))
+        let direction = radiansToVector(randomInRange(kHaloLowAngle, high: kHaloHighAngle))
         halo.physicsBody?.velocity = CGVectorMake(direction.dx * kHaloSpeed, direction.dy * kHaloSpeed)
         halo.physicsBody?.restitution = 1
         halo.physicsBody?.linearDamping = 0
@@ -526,11 +538,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             for node in mainLayer.children {
                 
-                    var aNode:SKNode = node as SKNode
+                    let aNode:SKNode = node 
                     
                     if aNode.name == "Halo" {
                     
-                        haloCount++
+                        haloCount += 1
                     }
             }
             
@@ -541,7 +553,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 halo.userData = ["Bomb" : true]
                 halo.physicsBody?.velocity = CGVectorMake(direction.dx * (kHaloSpeed + 40), direction.dy * (kHaloSpeed + 40))
                 haloCount = 0
-                println("Bomb's away")
+                print("Bomb's away")
             }
             else if (isGameOver == false && arc4random_uniform(6) == 0) {
                 // random point multiplier
@@ -570,7 +582,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             multiShot.physicsBody?.linearDamping = 0.0
             multiShot.physicsBody?.angularDamping = 0.0
             self.addChild(multiShot)
-            println("should be multishot")
+            print("should be multishot")
             killCount = 0
             
         }
@@ -614,13 +626,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func addExplosion (position:CGPoint, fileName:String) {
         
         let explosionPath:String = NSBundle.mainBundle().pathForResource(fileName, ofType: "sks")!
-        let explosion:SKEmitterNode = NSKeyedUnarchiver.unarchiveObjectWithFile(explosionPath) as SKEmitterNode
+        let explosion:SKEmitterNode = NSKeyedUnarchiver.unarchiveObjectWithFile(explosionPath) as! SKEmitterNode
         explosion.position = position
         explosion.particleTexture = SKTexture(imageNamed: "Halo@2x.png")
         
         mainLayer.addChild(explosion)
         
-        let removeExplosion = SKAction.sequence([SKAction.waitForDuration(1.5),
+        _ = SKAction.sequence([SKAction.waitForDuration(1.5),
                                                  SKAction.removeFromParent()])
     }
     // MARK: New / GameOver / Pause
@@ -662,7 +674,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         })
         mainLayer.enumerateChildNodesWithName("Shield", usingBlock: { (node, stop) -> Void in
             
-            self.shieldPool.append(node as SKSpriteNode)
+            self.shieldPool.append(node as! SKSpriteNode)
             node.removeFromParent()
         })
         
@@ -696,13 +708,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func newGame () {
         
         mainLayer.removeAllChildren()
+        
+        //Life Bar
+        
+        lifeBar.position = CGPointMake(self.size.width * 0.5, 70)
+        lifeBar.physicsBody = SKPhysicsBody(edgeFromPoint: CGPointMake(-lifeBar.size.width * 0.5, 0), toPoint: CGPointMake(lifeBar.size.width * 0.5, 0))
+        lifeBar.physicsBody?.categoryBitMask = kLifeBarCategory
+        mainLayer.addChild(lifeBar)
        
         //shield set up
         
-        for var i = 0; i < 6; i++ {
+        let shieldStart = Int(lifeBar.frame.minX + 30)
+        
+        for i in 0 ..< 6 {
             let shield = SKSpriteNode(imageNamed: "Block")
             shield.name = "Shield"
-            shield.position = CGPoint(x: 35 + (50 * i), y: 90)
+            shield.position = CGPoint(x: shieldStart + (50 * i), y: 90)
             shield.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(42, 9))
             shield.physicsBody?.categoryBitMask = kShieldCategory
             shield.physicsBody?.collisionBitMask = 0
@@ -715,14 +736,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             shieldPool.removeAtIndex(0)
             
         }
-        
-        //Life Bar
-        let lifeBar = SKSpriteNode(imageNamed: "BlueBar")
-        lifeBar.position = CGPointMake(self.size.width * 0.5, 70)
-        lifeBar.physicsBody = SKPhysicsBody(edgeFromPoint: CGPointMake(-lifeBar.size.width * 0.5, 0), toPoint: CGPointMake(lifeBar.size.width * 0.5, 0))
-        lifeBar.physicsBody?.categoryBitMask = kLifeBarCategory
-        mainLayer.addChild(lifeBar)
-        
         
         // initial setup
         
@@ -744,12 +757,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let url:NSURL = NSBundle.mainBundle().URLForResource("synthOminousLoop", withExtension: "caf")!
         var err:NSError?
-        audioPlayer = AVAudioPlayer(contentsOfURL: url, error: &err)
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOfURL: url)
+        } catch let error as NSError {
+            err = error
+            
+        }
         audioPlayer.numberOfLoops = -1
         audioPlayer.volume = 0.1
         
         audioPlayer.play()
-        gameCount++
+        gameCount += 1
       }
     
     
