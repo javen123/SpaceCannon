@@ -15,7 +15,7 @@ class GameViewController: UIViewController, ADInterstitialAdDelegate{
     
     var interAd:ADInterstitialAd!
     var interAdView:UIView!
-    var closeButton = UIButton(type: UIButtonType.System)
+    var closeButton = UIButton(type: UIButtonType.system)
     
     
     var scene: GameScene!
@@ -26,23 +26,23 @@ class GameViewController: UIViewController, ADInterstitialAdDelegate{
         
            // Configure the view.
         let skView = view as! SKView
-        skView.multipleTouchEnabled = true
+        skView.isMultipleTouchEnabled = true
         
         // Create and configure the scene.
         scene = GameScene(size: skView.bounds.size)
-        scene.scaleMode = .AspectFill
+        scene.scaleMode = .aspectFill
         
         // Present the scene.
         skView.presentScene(scene)
         
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(GameViewController.showAds), name: notificationKey, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(GameViewController.showAds), name: NSNotification.Name(rawValue: notificationKey), object: nil)
         
     }
     
     
     // MARK: IAd funcs
     
-    func close (sender:UIButton) {
+    func close (_ sender:UIButton) {
         closeButton.removeFromSuperview()
         interAdView.removeFromSuperview()
     }
@@ -54,39 +54,39 @@ class GameViewController: UIViewController, ADInterstitialAdDelegate{
         print("iad loading")
     }
     
-    func interstitialAdWillLoad(interstitialAd: ADInterstitialAd!) {
+    func interstitialAdWillLoad(_ interstitialAd: ADInterstitialAd!) {
         
     }
-    func interstitialAdDidLoad(interstitialAd: ADInterstitialAd!) {
+    func interstitialAdDidLoad(_ interstitialAd: ADInterstitialAd!) {
         
         
-        closeButton.frame = CGRectMake(20, 20, 20, 20)
+        closeButton.frame = CGRect(x: 20, y: 20, width: 20, height: 20)
         closeButton.layer.cornerRadius = 10
-        closeButton.setTitle("X", forState: .Normal)
-        closeButton.setTitleColor(UIColor.blackColor(), forState: .Normal)
-        closeButton.backgroundColor = UIColor.whiteColor()
-        closeButton.layer.borderColor = UIColor.blackColor().CGColor
+        closeButton.setTitle("X", for: UIControlState())
+        closeButton.setTitleColor(UIColor.black, for: UIControlState())
+        closeButton.backgroundColor = UIColor.white
+        closeButton.layer.borderColor = UIColor.black.cgColor
         closeButton.layer.borderWidth = 1
-        closeButton.addTarget(self, action: #selector(GameViewController.close(_:)), forControlEvents: UIControlEvents.TouchDown)
+        closeButton.addTarget(self, action: #selector(GameViewController.close(_:)), for: UIControlEvents.touchDown)
         
         interAdView = UIView()
         interAdView.frame = self.view.bounds
         self.view.addSubview(interAdView)
         
-        interAd.presentInView(interAdView)
+        interAd.present(in: interAdView)
         interAdView.addSubview(closeButton)
         print("iAd did load")
         
     }
     
-    func interstitialAdDidUnload(interstitialAd: ADInterstitialAd!) {
+    func interstitialAdDidUnload(_ interstitialAd: ADInterstitialAd!) {
         
         print("iad did unload")
         interAd = nil
         
     }
     
-    func interstitialAd(interstitialAd: ADInterstitialAd!, didFailWithError error: NSError!) {
+    func interstitialAd(_ interstitialAd: ADInterstitialAd!, didFailWithError error: Error!) {
         
         print("Failed to receive: \(error.localizedDescription)")
         audioPlayer.play()

@@ -217,9 +217,11 @@
 					8F3026371A8E7A200055909D = {
 						CreatedOnToolsVersion = 6.1.1;
 						DevelopmentTeam = G9Y82XZD3R;
+						LastSwiftMigration = 0830;
 					};
 					8F3026501A8E7A200055909D = {
 						CreatedOnToolsVersion = 6.1.1;
+						LastSwiftMigration = 0830;
 						TestTargetID = 8F3026371A8E7A200055909D;
 					};
 				};
@@ -424,6 +426,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.neva.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = FlysRevenge;
 				PROVISIONING_PROFILE = "";
+				SWIFT_VERSION = 3.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -445,6 +448,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.neva.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = FlysRevenge;
 				PROVISIONING_PROFILE = "";
+				SWIFT_VERSION = 3.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -465,6 +469,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.neva.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = FlysRevengeTests;
+				SWIFT_VERSION = 3.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FlysRevenge.app/FlysRevenge";
 			};
 			name = Debug;
@@ -481,6 +486,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.neva.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = FlysRevengeTests;
+				SWIFT_VERSION = 3.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FlysRevenge.app/FlysRevenge";
 			};
 			name = Release;

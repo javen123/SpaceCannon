@@ -32,8 +32,8 @@ class CCBall:SKSpriteNode {
             self.trail.particleBirthRate = 0.0
             let effectDuration = Double(self.trail.particleLifetime + self.trail.particleLifetimeRange)
             
-            let removeTrail = SKAction.sequence([SKAction.waitForDuration(effectDuration), SKAction.removeFromParent()])
-                self.runAction(removeTrail)
+            let removeTrail = SKAction.sequence([SKAction.wait(forDuration: effectDuration), SKAction.removeFromParent()])
+                self.run(removeTrail)
         }
         
         super.removeFromParent()
